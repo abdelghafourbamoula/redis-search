@@ -198,3 +198,63 @@ You can also use multiple prefix terms in a single query. Try searching for “a
 ```bash
 FT.SEARCH books-idx "agat* orie*"
 ```
+
+### Boolean logic
+
+Try finding books about dragons that are not also about wizards or magicians!
+
+```bash
+FT.SEARCH books-idx "dragons -wizard -magician"
+```
+## field-specific searches
+
+Now, try a full-text search for “mars” across all TEXT fields with a full-text search for “heinlein” in only the authors field:
+
+```bash
+FT.SEARCH books-idx "mars @authors:heinlein"
+```
+
+##
+Try sorting all books that mention the prefix “crypto” sorted by publication year.
+
+```bash
+FT.SEARCH books-idx crypto* sortby published_year
+```
+
+## limiting  
+
+Finally, get the first book in order of publication year that mentions “murder”:
+
+```bash
+FT.SEARCH books-idx murder sortby published_year limit 0 1
+````
+
+## Highlighting & Summarization 
+
+This query returns a maximum of three (which is also the default) "fragments" of twenty-five words each for matches of the term "agamemnon":
+
+```bash
+FT.SEARCH books-idx agamemnon SUMMARIZE FIELDS 1 description FRAGS 3 LEN 25
+```
+
+> **Note!** : In this context, the matching text is often called a “hit.”
+
+You can combine HIGHLIGHT and SUMMARIZE together to highlight hits in a field and summarize the text returned around each hit.
+
+```bash
+FT.SEARCH books-idx agamemnon SUMMARIZE FIELDS 1 description FRAGS 3 LEN 25 HIGHLIGHT
+```
+
+- ## Practice
+
+Search for the term “illusion” and highlight any matches:
+
+```bash
+FT.SEARCH books-idx illusion highlight
+```
+
+Now search for “shield,” highlighting any matches, and summarizing the description field with a max fragments of 1 and length 20.
+
+```bash
+FT.SEARCH books-idx shield HIGHLIGHT SUMMARIZE FIELDS 1 description FRAGS 1 LEN 20
+```
