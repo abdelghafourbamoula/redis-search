@@ -195,4 +195,6 @@ FT.SEARCH books-idx "atwood hand*"
 
 You can also use multiple prefix terms in a single query. Try searching for “agat* orie*” -- you should find Murder on the Orient Express.
 
+```bash
 FT.SEARCH books-idx "agat* orie*"
+```
