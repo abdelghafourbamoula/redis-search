@@ -359,3 +359,16 @@ Now try using an aggregate query to find the authors with the most books publish
 FT.AGGREGATE books-fiction-idx * GROUPBY 1 @authors REDUCE COUNT_DISTINCT 1 @title as total_books SORTBY 2 @total_books DESC
 ```
 
+## Adjusting the Score of a Term 
+
+How might you increase the weight of “greek” books that have the “History” category, while also returning books from other categories?
+
+```bash
+FT.SEARCH books-idx "((@categories:{History}) => { $weight: 10 } greek) | greek"
+```
+
+Another common boost is to score recent documents in an index higher. How might you use the same technique we used for Greek books to score “cowboy” books higher if they were published after the year 2000?
+
+```bash
+FT.SEARCH books-idx "((@published_year:[2000 +inf]) => { $weight: 10 } cowboy) | cowboy"
+```
