@@ -324,3 +324,38 @@ Finally, find the days that more than one user logged in -- in other words, coun
 ```bash
 FT.AGGREGATE users-idx * GROUPBY 2 @last_login @user_id APPLY "day(@last_login)" as last_login_day APPLY "timefmt(@last_login_day)" AS "last_login_str" GROUPBY 1 "@last_login_str" REDUCE COUNT_DISTINCT 1 "@user_id" AS num_logins FILTER "@num_logins>1"
 ```
+
+---
+
+# 2. Advanced Topics
+
+## Parial Indexes
+
+Imagine that the books-idx index had grown extremely large, and you wanted to split it based on the published year of books. Try creating two indexes: one for books published before 1990 and one for books published on or after 1990.
+
+```bash
+FT.CREATE books-older-idx ON HASH PREFIX 1 ru203:book:details: FILTER "@published_year<1990" SCHEMA isbn TAG SORTABLE title TEXT WEIGHT 2.0 SORTABLE subtitle TEXT SORTABLE thumbnail TAG NOINDEX description TEXT SORTABLE published_year NUMERIC SORTABLE average_rating NUMERIC SORTABLE authors TEXT SORTABLE categories TAG SEPARATOR ";" author_ids TAG SEPARATOR ";"
+
+FT.CREATE books-newer-idx ON HASH PREFIX 1 ru203:book:details: FILTER "@published_year>=1990" SCHEMA isbn TAG SORTABLE title TEXT WEIGHT 2.0 SORTABLE subtitle TEXT SORTABLE thumbnail TAG NOINDEX description TEXT SORTABLE published_year NUMERIC SORTABLE average_rating NUMERIC SORTABLE authors TEXT SORTABLE categories TAG SEPARATOR ";" author_ids TAG SEPARATOR ";"
+```
+
+Once these indexes exist, try running a couple of queries. For example, get the count of the number of books in each index:
+
+```bash
+FT.SEARCH books-older-idx * LIMIT 0 0
+
+FT.SEARCH books-newer-idx * LIMIT 0 0
+```
+
+Now try creating an index just for books with the “Fiction” category. Note that when filtering during FT.CREATE, you are filtering on the string values in a Hash.
+
+```bash
+FT.CREATE books-fiction-idx ON HASH PREFIX 1 ru203:book:details: FILTER "@categories=='Fiction'" SCHEMA isbn TAG SORTABLE title TEXT WEIGHT 2.0 SORTABLE subtitle TEXT SORTABLE thumbnail TAG NOINDEX description TEXT SORTABLE published_year NUMERIC SORTABLE average_rating NUMERIC SORTABLE authors TEXT SORTABLE categories TAG SEPARATOR ";" author_ids TAG SEPARATOR ";"
+```
+
+Now try using an aggregate query to find the authors with the most books published in the books-fiction-idx index.
+
+```bash
+FT.AGGREGATE books-fiction-idx * GROUPBY 1 @authors REDUCE COUNT_DISTINCT 1 @title as total_books SORTBY 2 @total_books DESC
+```
+
