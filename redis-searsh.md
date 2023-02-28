@@ -2,7 +2,6 @@
 
 ## Hands-on with RediSearch
 
-
 - First, find the book The Inner Reaches of Outer Space:
 
 ```bash
@@ -29,9 +28,7 @@ Finally, find books that have the "Fantasy" category:
 FT.SEARCH books-idx "@categories:{Fantasy}"
 ```
 
-
-# Working with numbers
-
+## Working with numbers
 
 - Try finding the titles of books with an average rating from 4.5 through 5:
 
@@ -57,8 +54,7 @@ FT.SEARCH books-idx "@average_rating:[4 +inf] @published_year:[2015 +inf]" RETUR
 FT.SEARCH books-idx "@average_rating:[-inf 3] @published_year:[-inf (2000]" RETURN 1 title
 ```
 
-
-# Working with Dates and Times
+## Working with Dates and Times
 
 - Try finding users who have logged in on or after 1:25pm UTC on December 11, 2020:
 
@@ -72,8 +68,7 @@ FT.SEARCH books-idx "@average_rating:[-inf 3] @published_year:[-inf (2000]" RETU
 FT.SEARCH users-idx "@last_login:[-inf (1607693100]"
 ```
 
-
-# Boolean Logic
+## Boolean Logic
 
 Many of the queries in this section use full-text search because this type of query makes boolean logic simple to illustrate.
 
@@ -109,7 +104,6 @@ And same as with searching for terms in a field, use the dash symbol for a NOT q
 FT.SEARCH books-idx "@authors:tolkien -@title:ring"
 ```
 
-
 # Sorting Results
 
 - Try finding Juvenile Fiction books sorted by the year they were published:
@@ -142,10 +136,7 @@ FT.SEARCH books-idx "@authors:Ursula K. Le Guin" SORTBY "published_year" LIMIT 0
 FT.SEARCH books-idx "@published_year:[2000 +inf]" LIMIT 100 100
 ```
 
-
-
 # Let's Practice !
-
 
 - Try getting Stephen King books published between 1980 and 1990, inclusive.
 
@@ -199,13 +190,14 @@ You can also use multiple prefix terms in a single query. Try searching for “a
 FT.SEARCH books-idx "agat* orie*"
 ```
 
-### Boolean logic
+## Boolean logic
 
 Try finding books about dragons that are not also about wizards or magicians!
 
 ```bash
 FT.SEARCH books-idx "dragons -wizard -magician"
 ```
+
 ## field-specific searches
 
 Now, try a full-text search for “mars” across all TEXT fields with a full-text search for “heinlein” in only the authors field:
@@ -214,7 +206,8 @@ Now, try a full-text search for “mars” across all TEXT fields with a full-te
 FT.SEARCH books-idx "mars @authors:heinlein"
 ```
 
-##
+## sorting
+
 Try sorting all books that mention the prefix “crypto” sorted by publication year.
 
 ```bash
@@ -257,4 +250,77 @@ Now search for “shield,” highlighting any matches, and summarizing the descr
 
 ```bash
 FT.SEARCH books-idx shield HIGHLIGHT SUMMARIZE FIELDS 1 description FRAGS 1 LEN 20
+```
+
+# Aggregation
+
+FT.SEARCH works perfectly well to count query results, but you can also use the FT.AGGREGATE command to count items in a query.
+
+Here’s an aggregation query that finds the same number of items as the FT.SEARCH query we just looked at:
+
+```bash
+FT.AGGREGATE books-idx * GROUPBY 0 REDUCE COUNT 0 AS total
+```
+
+This query introduces us to most of the concepts we’ll talk about in this unit. Let’s go through the steps briefly.
+
+## Groupping data
+
+Try grouping book checkouts in the checkouts-idx index by the checkout date.
+
+```bash
+FT.AGGREGATE checkouts-idx * GROUPBY 1 @checkout_date
+```
+
+Now try a search for “python” in the books-idx index grouped by the “categories” field.
+
+```bash
+FT.AGGREGATE books-idx python GROUPBY 1 @categories
+```
+
+## Sorting
+
+Try finding all users in the users-idx index, grouped by last login date and last name, and then sorted by last name.
+
+```bash
+FT.AGGREGATE users-idx * GROUPBY 2 @last_login @last_name SORTBY 1 @last_name
+```
+
+Now try finding books in the books-idx index published in the year 1983, grouped by author and title, and then sorted by authors and by title.
+
+```bash
+FT.AGGREGATE books-idx "@published_year:[1983 1983]" GROUPBY 2 @authors @title SORTBY 2 @authors @title
+```
+## Reducing
+
+Try counting the number of books in each category to see which categories have the most books.
+
+```bash
+FT.AGGREGATE books-idx * GROUPBY 1 @categories REDUCE COUNT 0 AS books_count SORTBY 2 @books_count DESC
+```
+
+Now try finding the average rating of all books that mention “tolkien.”
+
+```bash
+FT.AGGREGATE books-idx tolkien GROUPBY 0 REDUCE AVG 1 @average_rating as avg_rating
+```
+
+## Transforming
+
+Try **finding all books with two co-authors**. 
+
+```bash
+FT.AGGREGATE books-idx * APPLY "split(@authors, ';')" AS authors_list GROUPBY 1 @title REDUCE COUNT_DISTINCT 1 authors_list AS authors_count FILTER "@authors_count==2"
+```
+
+Now try counting the number of user logins (according to the “last_login” field in the users-idx index) per day of the week. 
+
+```bash
+FT.AGGREGATE users-idx * GROUPBY 2 @last_login @user_id APPLY "dayofweek(@last_login)" AS day_of_week GROUPBY 1 @day_of_week REDUCE COUNT 0 AS login_count SORTBY 1 @day_of_week
+```
+
+Finally, find the days that more than one user logged in -- in other words, count the distinct IDs of users in the users-idx index who last logged in, grouped by date. You should return the date as a formatted time string, like "2020-12-12T00:00:00Z".
+
+```bash
+FT.AGGREGATE users-idx * GROUPBY 2 @last_login @user_id APPLY "day(@last_login)" as last_login_day APPLY "timefmt(@last_login_day)" AS "last_login_str" GROUPBY 1 "@last_login_str" REDUCE COUNT_DISTINCT 1 "@user_id" AS num_logins FILTER "@num_logins>1"
 ```
