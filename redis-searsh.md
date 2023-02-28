@@ -372,3 +372,66 @@ Another common boost is to score recent documents in an index higher. How might 
 ```bash
 FT.SEARCH books-idx "((@published_year:[2000 +inf]) => { $weight: 10 } cowboy) | cowboy"
 ```
+
+## getting all docuents in one index
+
+Try getting all users in the users-idx index.
+
+```bash
+FT.SEARCH users-idx *
+```
+
+## Exact-Matching Punctuation
+
+If the values in a TEXT field will contain punctuation and you want to be able to search for exact matches using that punctuation (e.g., email addresses), you'll need to escape any punctuation in the values when you index. And then when you query, you also need to escape punctuation.
+
+As an example, the users-idx index stores email addresses as TEXT fields. When we added the email address that we planned to use as a TEXT field, we escaped all the punctuation, like so:
+
+```bash
+HMSET ru203:user:details:28 first_name "Kelvin" last_name "Brown" email "k.brown@example.com" escaped_email "k\\.brown\\@example\\.com" user_id "28"
+```
+
+To query this field later for an exact-match on an email address, we also need to escape any punctuation in the query:
+
+```bash
+FT.SEARCH users-idx "@escaped_email:k\\.brown\\@example\\.com"
+```
+
+If you want to find exact-matches on punctuation, the punctuation you need to escape when indexing and querying is: `,.<>{}[]"':;!@#$%^&*()-+=~`
+
+
+Try adding a new user and including their email address in the escaped_email field. The users-idx index processes this field as TEXT, which means you need to escape punctuation in the Hash and when you query.
+
+```bash
+HMSET ru203:user:details:1000 first_name "Andrew" last_name "Brookins" escaped_email "a\\.m\\.brookins\\@example\\.com" user_id "1000"
+```
+
+Now query the field -- note that you have to escape the punctuation in the email address again:
+
+```bash
+FT.SEARCH users-idx "@escaped_email:a\\.m\\.brookins\\@example\\.com"
+```
+
+## Spellcheck
+
+An alternative approach to handling spelling errors is to use the FT.SPELLCHECK command to return possible correct spellings when you suspect a spelling error.
+
+You might use this when you find zero hits for a user’s query to suggest alternative words the user could try searching for. Or, without asking the user, you could run a second query using the first of the words returned by FT.SPELLCHECK, return the results, and explain that you corrected the user's spelling. The second approach is how most web search engines work.
+
+The following spellcheck query finds all possible correct spellings of the term “wizrds” (notice that it is “wizards” misspelled):
+
+```bash
+FT.SPELLCHECK books-idx wizrds
+```
+
+Try searching for spell-check suggestions for the term “monter.”
+
+```bash
+FT.SPELLCHECK books-idx monter
+```
+
+Now try running a fuzzy-matching query to search for documents with similar terms to “monter.”
+
+```bash
+FT.SEARCH books-idx "%monter%"
+```
