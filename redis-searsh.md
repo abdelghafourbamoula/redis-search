@@ -104,7 +104,7 @@ And same as with searching for terms in a field, use the dash symbol for a NOT q
 FT.SEARCH books-idx "@authors:tolkien -@title:ring"
 ```
 
-# Sorting Results
+## Sorting Results
 
 - Try finding Juvenile Fiction books sorted by the year they were published:
 
@@ -122,7 +122,7 @@ FT.SEARCH books-idx "@average_rating:[4.9 5]" SORTBY average_rating DESC
 > #### The SORTBY option to FT.SEARCH allows you to sort by only one field per query. However, as you’ll see when we talk about aggregations, you can sort an aggregation query by more than one field.
 
 
-# Limiting Results (Pagination)
+## Limiting Results (Pagination)
 
 - Try searching for books written by Ursula K. Le Guin, ordered by publication year, and limiting the query to the first 3 books published.
 
@@ -252,7 +252,7 @@ Now search for “shield,” highlighting any matches, and summarizing the descr
 FT.SEARCH books-idx shield HIGHLIGHT SUMMARIZE FIELDS 1 description FRAGS 1 LEN 20
 ```
 
-# Aggregation
+# 2. Aggregation
 
 FT.SEARCH works perfectly well to count query results, but you can also use the FT.AGGREGATE command to count items in a query.
 
